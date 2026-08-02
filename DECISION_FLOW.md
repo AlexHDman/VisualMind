@@ -75,6 +75,6 @@ Creative Summary не является промптом. Он служит по�
 
 ## Architectural Principles
 
-- **Decision Before Generation.** Решение формируется и уточняется до генерации.
-- **Human-in-the-Loop.** Пользователь участвует в определении и подтверждении направления решения.
-- **No Generation Without Confirmation.** Генерация выполняется только после подтверждения Creative Summary пользователем.
+This contract applies the permanent principles **Professional Reasoning Before Generation** and **User Confirmation Before Production** defined in `VISUALMIND_PRINCIPLES.md`.
+
+The Decision Flow above defines their operational sequence for VisualMind Studio.

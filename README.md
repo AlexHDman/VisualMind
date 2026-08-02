@@ -9,6 +9,7 @@ VisualMind is a human-centered Creative Intelligence architecture for developing
 
 ## Architecture documents
 
+- `VISUALMIND_PRINCIPLES.md` — Permanent constitution governing the project.
 - `FOUNDATION.md` — Foundation declaration and stable knowledge level.
 - `HUMAN_PERCEPTION.md` — Source of truth for human visual perception.
 - `GESTALT.md` — Source of truth for automatic visual organization.
@@ -20,15 +21,13 @@ VisualMind is a human-centered Creative Intelligence architecture for developing
 - `COMPOSITION.md`
 - `TYPOGRAPHY.md`
 - `COLOR_PSYCHOLOGY.md`
+- `EMOTIONAL_DESIGN.md`
 
 ## Project principles
 
-- One Document = One Question
-- One Knowledge Domain = One Document
-- Reference Instead of Duplication
-- Source of Truth
-- Knowledge Before Intelligence
-- Human-Centered Reasoning
+The permanent project principles are defined in `VISUALMIND_PRINCIPLES.md`.
+
+Foundation-specific applications include Knowledge Before Intelligence and Human-Centered Reasoning, as defined in `FOUNDATION.md`.
 
 ## Repository scope
 

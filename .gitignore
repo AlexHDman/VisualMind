@@ -1,2 +1,17 @@
 # Windows Explorer metadata
 desktop.ini
+
+# Local Python runtime and generated prototype output
+.venv/
+__pycache__/
+*.py[cod]
+output/
+
+# Archives are never part of the archival source repository
+*.zip
+*.7z
+*.rar
+*.tar
+*.gz
+*.bz2
+*.xz

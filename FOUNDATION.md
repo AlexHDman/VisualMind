@@ -26,10 +26,10 @@ Foundation не объясняет методологическое содерж
 
 ## Foundation Principles
 
-- **One Document = One Question.** Каждый документ отвечает на один главный вопрос.
-- **One Knowledge Domain = One Document.** Каждая область знаний имеет один определённый документ-источник.
-- **Reference Instead of Duplication.** Документы ссылаются на источник знаний вместо повторения его содержания.
-- **Source of Truth.** Ответственный документ является авторитетным источником в пределах своей области.
+Foundation complies with the permanent principles in `VISUALMIND_PRINCIPLES.md`.
+
+Within Foundation, the following applications remain in force:
+
 - **Knowledge Before Intelligence.** Интеллектуальные компоненты опираются на утверждённые знания и контракты.
 - **Human-Centered Reasoning.** Решения VisualMind оцениваются с учётом человеческого восприятия и понимания.
 
