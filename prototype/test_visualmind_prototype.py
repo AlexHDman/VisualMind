@@ -1,4 +1,5 @@
 import io
+import re
 import sys
 import tempfile
 import unittest
@@ -155,8 +156,14 @@ class CreativeEngineTests(unittest.TestCase):
             result = engine.confirm()
             generation = generation_specification(result, context)
             asset, trace = LocalSvgGenerator().generate(generation, Path(directory), "fohow", result)
-            self.assertIn('width="1080" height="1920"', asset.read_text(encoding="utf-8"))
-            self.assertIn("Напишите в WhatsApp", asset.read_text(encoding="utf-8"))
+            asset_text = asset.read_text(encoding="utf-8")
+            self.assertIn('width="1080" height="1920"', asset_text)
+            self.assertIn("Напишите в WhatsApp", asset_text)
+            self.assertIn('font-size="84"', asset_text)
+            self.assertIn('font-size="48"', asset_text)
+            self.assertIn('font-size="32"', asset_text)
+            headline_lines = re.findall(r'class="headline"[^>]*>(.*?)</text>', asset_text)
+            self.assertEqual(" ".join(headline_lines), engine.decisions["message"].statement)
             self.assertTrue(trace.exists())
             trace_text = trace.read_text(encoding="utf-8")
             self.assertIn('"source_reference"', trace_text)
@@ -214,6 +221,35 @@ class CreativeEngineTests(unittest.TestCase):
     def test_svg_meta_and_cta_do_not_overlap(self) -> None:
         _, boxes = svg_layout(1200, 628, 3)
         self.assertFalse(boxes_overlap(boxes["meta"], boxes["cta"]))
+
+    def test_svg_typography_is_readable_in_vertical_and_landscape_formats(self) -> None:
+        vertical, _ = svg_layout(1080, 1920, 3)
+        landscape, _ = svg_layout(1200, 628, 3)
+        self.assertGreaterEqual(vertical["headline_size"], 84)
+        self.assertGreaterEqual(vertical["product_size"], 48)
+        self.assertGreaterEqual(vertical["meta_size"], 32)
+        self.assertGreaterEqual(vertical["cta_size"], 38)
+        self.assertGreaterEqual(vertical["headline_step"], vertical["headline_size"])
+        self.assertGreaterEqual(landscape["headline_size"], 60)
+        self.assertGreaterEqual(landscape["product_size"], 36)
+        self.assertGreaterEqual(landscape["meta_size"], 26)
+        self.assertGreaterEqual(landscape["cta_size"], 32)
+        self.assertGreaterEqual(landscape["headline_step"], landscape["headline_size"])
+
+    def test_landscape_svg_uses_polished_typography_without_overflow(self) -> None:
+        context = complete_context(asset_type="Landscape social image")
+        engine = CreativeEngine(context)
+        result = engine.confirm()
+        generation = generation_specification(result, context)
+        with tempfile.TemporaryDirectory() as directory:
+            asset, _ = LocalSvgGenerator().generate(generation, Path(directory), "landscape", result)
+            asset_text = asset.read_text(encoding="utf-8")
+        self.assertIn('width="1200" height="628"', asset_text)
+        self.assertIn('font-size="60"', asset_text)
+        self.assertIn('font-size="36"', asset_text)
+        self.assertIn('font-size="26"', asset_text)
+        headline_lines = re.findall(r'class="headline"[^>]*>(.*?)</text>', asset_text)
+        self.assertEqual(" ".join(headline_lines), engine.decisions["message"].statement)
 
     def test_svg_key_geometry_stays_inside_viewbox(self) -> None:
         for dimensions in ((1200, 628), (1080, 1080), (1080, 1920)):

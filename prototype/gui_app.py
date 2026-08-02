@@ -7,9 +7,9 @@ import sys
 from pathlib import Path
 
 try:
-    from PySide6.QtCore import QByteArray, Qt, QUrl
-    from PySide6.QtGui import QDesktopServices
-    from PySide6.QtSvgWidgets import QSvgWidget
+    from PySide6.QtCore import QByteArray, QRectF, Qt, QUrl
+    from PySide6.QtGui import QDesktopServices, QPainter
+    from PySide6.QtSvg import QSvgRenderer
     from PySide6.QtWidgets import (
         QApplication,
         QButtonGroup,
@@ -59,12 +59,69 @@ QPushButton#generateButton { background: #c96c2e; border-color: #e18a4e; color: 
 QPushButton#generateButton:hover { background: #db7834; }
 QPushButton#generateButton:disabled { background: #42342c; border-color: #5a4638; color: #8b7c72; }
 QCheckBox, QRadioButton { spacing: 9px; padding: 3px; }
-QCheckBox::indicator, QRadioButton::indicator { width: 18px; height: 18px; }
+QCheckBox::indicator { width: 18px; height: 18px; }
+QRadioButton::indicator { width: 18px; height: 18px; border: 2px solid #61727e; border-radius: 10px; background: #151b22; }
+QRadioButton::indicator:hover { border-color: #79d4d1; }
+QRadioButton::indicator:checked { border: 5px solid #79d4d1; background: #0f3338; }
+QFrame#directionCard { background: #192129; border: 1px solid #344450; border-radius: 9px; }
+QFrame#directionCard[selected="true"] { background: #173039; border: 2px solid #63cdd0; }
+QRadioButton[selected="true"] { color: #9de5e2; font-weight: 700; }
 QScrollArea { border: 0; }
 QSplitter::handle { background: #28343e; width: 4px; }
 QLabel#ready { color: #79d4d1; font-weight: 700; }
 QLabel#blocked { color: #f29a5a; font-weight: 700; }
 """
+
+
+def keep_aspect_ratio_rect(
+    source_width: float,
+    source_height: float,
+    available_width: float,
+    available_height: float,
+) -> tuple[float, float, float, float]:
+    if min(source_width, source_height, available_width, available_height) <= 0:
+        return 0.0, 0.0, 0.0, 0.0
+    scale = min(available_width / source_width, available_height / source_height)
+    width = source_width * scale
+    height = source_height * scale
+    return (
+        (available_width - width) / 2,
+        (available_height - height) / 2,
+        width,
+        height,
+    )
+
+
+class AspectRatioSvgPreview(QWidget):
+    """Centred SVG preview that always preserves the source viewBox ratio."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.renderer = QSvgRenderer(self)
+
+    def load(self, source: str | QByteArray) -> bool:
+        loaded = self.renderer.load(source)
+        self.update()
+        return loaded
+
+    def fitted_viewport(self) -> QRectF:
+        view_box = self.renderer.viewBoxF()
+        available = self.contentsRect()
+        x, y, width, height = keep_aspect_ratio_rect(
+            view_box.width(),
+            view_box.height(),
+            float(available.width()),
+            float(available.height()),
+        )
+        return QRectF(available.x() + x, available.y() + y, width, height)
+
+    def paintEvent(self, event) -> None:  # type: ignore[no-untyped-def]
+        super().paintEvent(event)
+        if not self.renderer.isValid():
+            return
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        self.renderer.render(painter, self.fitted_viewport())
 
 
 class VisualMindWindow(QMainWindow):
@@ -73,7 +130,8 @@ class VisualMindWindow(QMainWindow):
         self.controller = StudioController()
         self._refreshing = False
         self._direction_buttons: dict[str, QRadioButton] = {}
-        self.setWindowTitle("VisualMind Studio — Prototype 0.3")
+        self._direction_cards: dict[str, QFrame] = {}
+        self.setWindowTitle("VisualMind Studio — Прототип 0.3.2")
         self.resize(1680, 980)
         self.setMinimumSize(1100, 720)
         self._build_ui()
@@ -111,7 +169,7 @@ class VisualMindWindow(QMainWindow):
         self.confirm_direction_button = QPushButton("Подтвердить направление")
         self.generate_button = QPushButton("Сгенерировать")
         self.generate_button.setObjectName("generateButton")
-        self.copy_prompt_button = QPushButton("Копировать Generation Prompt")
+        self.copy_prompt_button = QPushButton("Копировать промпт генерации")
         self.open_folder_button = QPushButton("Открыть папку результата")
         self.new_project_button = QPushButton("Новый проект")
         for button in (
@@ -144,7 +202,7 @@ class VisualMindWindow(QMainWindow):
             ("product", "Конкретный продукт"),
             ("audience", "Аудитория"),
             ("expected_action", "Ожидаемое действие"),
-            ("final_cta", "Финальный текст CTA"),
+            ("final_cta", "Финальный призыв (CTA)"),
         ):
             edit = QLineEdit()
             edit.setClearButtonEnabled(True)
@@ -170,11 +228,11 @@ class VisualMindWindow(QMainWindow):
         gaps_layout.addWidget(self.gaps_text)
         layout.addWidget(gaps_group)
 
-        self.directions_group = QGroupBox("Creative Directions")
+        self.directions_group = QGroupBox("Творческие направления")
         self.directions_layout = QVBoxLayout(self.directions_group)
         layout.addWidget(self.directions_group)
 
-        summary_group = QGroupBox("Creative Summary")
+        summary_group = QGroupBox("Творческое резюме")
         summary_layout = QVBoxLayout(summary_group)
         self.summary_text = QPlainTextEdit()
         self.summary_text.setReadOnly(True)
@@ -188,7 +246,7 @@ class VisualMindWindow(QMainWindow):
         for key, label in (
             ("product", "Продукт подтверждён"),
             ("audience", "Аудитория подтверждена"),
-            ("display_cta", "Display CTA подтверждён"),
+            ("display_cta", "Финальный призыв подтверждён"),
             ("format", "Формат подтверждён"),
             ("verified_facts", "Использовать только проверенные факты"),
             ("direction", "Творческое направление подтверждено"),
@@ -203,15 +261,15 @@ class VisualMindWindow(QMainWindow):
     def _production_panel(self) -> QScrollArea:
         content = QWidget()
         layout = QVBoxLayout(content)
-        preview_group = QGroupBox("SVG Preview")
+        preview_group = QGroupBox("Предпросмотр SVG")
         preview_layout = QVBoxLayout(preview_group)
-        self.svg_preview = QSvgWidget()
+        self.svg_preview = AspectRatioSvgPreview()
         self.svg_preview.setMinimumHeight(320)
         self.svg_preview.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         preview_layout.addWidget(self.svg_preview)
         layout.addWidget(preview_group, 2)
 
-        spec_group = QGroupBox("Generation Specification")
+        spec_group = QGroupBox("Спецификация генерации")
         spec_layout = QVBoxLayout(spec_group)
         self.spec_text = QPlainTextEdit()
         self.spec_text.setReadOnly(True)
@@ -219,7 +277,7 @@ class VisualMindWindow(QMainWindow):
         spec_layout.addWidget(self.spec_text)
         layout.addWidget(spec_group)
 
-        readiness_group = QGroupBox("Production Readiness")
+        readiness_group = QGroupBox("Готовность к производству")
         readiness_layout = QVBoxLayout(readiness_group)
         self.readiness_label = QLabel()
         self.readiness_label.setWordWrap(True)
@@ -303,6 +361,7 @@ class VisualMindWindow(QMainWindow):
     def _refresh_directions(self) -> None:
         self._clear_layout(self.directions_layout)
         self._direction_buttons = {}
+        self._direction_cards = {}
         engine = self.controller.engine
         if engine is None or not engine.directions:
             label = QLabel("Направления появятся после закрытия блокирующих пробелов.")
@@ -313,15 +372,20 @@ class VisualMindWindow(QMainWindow):
         group.setExclusive(True)
         for direction in engine.directions:
             card = QFrame()
+            card.setObjectName("directionCard")
+            selected = direction.direction_id == engine.selected_direction_id
+            card.setProperty("selected", selected)
             card.setFrameShape(QFrame.Shape.StyledPanel)
             card_layout = QVBoxLayout(card)
             radio = QRadioButton(direction.name)
-            radio.setChecked(direction.direction_id == engine.selected_direction_id)
+            radio.setChecked(selected)
+            radio.setProperty("selected", selected)
             radio.toggled.connect(
-                lambda checked, direction_id=direction.direction_id: self.select_direction(direction_id) if checked else None
+                lambda checked, direction_id=direction.direction_id: self._direction_toggled(direction_id, checked)
             )
             group.addButton(radio)
             self._direction_buttons[direction.direction_id] = radio
+            self._direction_cards[direction.direction_id] = card
             details = QLabel(
                 f"Идея: {direction.core_idea}\n\n"
                 f"Визуальный герой: {direction.hero}\n\n"
@@ -332,6 +396,20 @@ class VisualMindWindow(QMainWindow):
             card_layout.addWidget(radio)
             card_layout.addWidget(details)
             self.directions_layout.addWidget(card)
+
+    def _direction_toggled(self, direction_id: str, checked: bool) -> None:
+        card = self._direction_cards.get(direction_id)
+        radio = self._direction_buttons.get(direction_id)
+        if card is not None:
+            card.setProperty("selected", checked)
+            card.style().unpolish(card)
+            card.style().polish(card)
+        if radio is not None:
+            radio.setProperty("selected", checked)
+            radio.style().unpolish(radio)
+            radio.style().polish(radio)
+        if checked:
+            self.select_direction(direction_id)
 
     def select_direction(self, direction_id: str) -> None:
         if self._refreshing:

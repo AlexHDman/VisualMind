@@ -48,7 +48,7 @@ class StudioControllerTests(unittest.TestCase):
         controller.update_field("format", "WhatsApp 9:16 — 1080×1920")
         confirm_all(controller)
         self.assertFalse(controller.can_generate)
-        self.assertTrue(any("Product" in issue for issue in controller.readiness_issues()))
+        self.assertTrue(any("Продукт" in issue for issue in controller.readiness_issues()))
 
     def test_missing_format_disables_generate(self) -> None:
         controller = completed_controller(include_format=False)

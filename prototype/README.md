@@ -54,12 +54,16 @@ The current SVG is a deterministic technical layout used to validate architectur
 
 Local Qwen models, ComfyUI and a CUDA-powered Generator are not connected in Prototype 0.3.1. No external or local image model participates in generation yet.
 
-Known GUI defects retained for the next iteration:
+### Prototype 0.3.2 — GUI Polish
 
-- the selected Creative Direction indicator is not visible enough;
-- vertical SVG Preview proportions are displayed incorrectly;
-- typography in the technical SVG is too small;
-- some English headings remain in the Russian interface.
+The initial GUI defects recorded in Prototype 0.3.1 are resolved:
+
+- the selected Creative Direction now has a visible radio indicator and highlighted card;
+- vertical and landscape SVG previews are centred and fitted with their original aspect ratio;
+- technical SVG typography and spacing are larger while the confirmed headline remains complete;
+- user-facing GUI headings and status messages are localized into Russian.
+
+The SVG remains a technical architecture-validation layout. Prototype 0.3.2 does not add Qwen, Ollama, ComfyUI, CUDA or any image-model integration.
 
 Local console proof of an intelligent CIM decision chain:
 

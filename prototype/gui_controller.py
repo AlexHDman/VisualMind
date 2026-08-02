@@ -208,15 +208,15 @@ class StudioController:
             issues.append("Исходный запрос изменён и требует повторного анализа.")
         context = self.context
         if context.product and context.brand and context.product.casefold() == context.brand.casefold():
-            issues.append("Product не может совпадать с Brand.")
+            issues.append("Продукт не может совпадать с брендом.")
         if not format_is_complete(context):
             issues.append("Не определены канал, формат и размеры.")
         if not context.display_cta.strip():
-            issues.append("Не определён финальный Display CTA.")
+            issues.append("Не определён финальный призыв к действию.")
         confirmation_labels = {
             "product": "Продукт не подтверждён.",
             "audience": "Аудитория не подтверждена.",
-            "display_cta": "Display CTA не подтверждён.",
+            "display_cta": "Финальный призыв не подтверждён.",
             "format": "Формат не подтверждён.",
             "verified_facts": "Не подтверждено ограничение на использование только проверенных фактов.",
             "direction": "Творческое направление не подтверждено.",
@@ -234,12 +234,12 @@ class StudioController:
 
     def creative_summary(self) -> str:
         if self.engine is None or self.engine.blocking_gaps():
-            return "Creative Summary появится после закрытия блокирующих пробелов."
+            return "Творческое резюме появится после закрытия блокирующих пробелов."
         return self.engine.creative_summary().strip()
 
     def generation_preview(self) -> str:
         if self.engine is None or self.context is None or self.engine.blocking_gaps():
-            return "Generation Specification пока недоступна."
+            return "Спецификация генерации пока недоступна."
         decisions = self.engine.decisions
         return "\n".join([
             f"Формат: {self.context.asset_type or 'не определён'}",
@@ -247,13 +247,13 @@ class StudioController:
             f"Сообщение: {decisions['message'].statement}",
             f"Герой: {decisions['visual'].statement}",
             f"Цвет: {decisions['colour'].statement}",
-            f"Display CTA: {decisions['display_cta'].statement}",
+            f"Финальный призыв: {decisions['display_cta'].statement}",
         ])
 
     def generate(self, output_dir: Path, asset_name: str = "visualmind-studio") -> tuple[Path, Path, Path]:
         issues = self.readiness_issues()
         if issues:
-            raise WorkflowBlocked("Production Readiness Gate не пройден: " + "; ".join(issues))
+            raise WorkflowBlocked("Проверка готовности к производству не пройдена: " + "; ".join(issues))
         assert self.engine is not None and self.context is not None
         result = self.engine.confirm()
         specification = generation_specification(result, self.context)

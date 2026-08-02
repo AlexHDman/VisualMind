@@ -1,5 +1,16 @@
 # Prototype Changelog
 
+## 0.3.2 — GUI Polish
+
+- Added a high-visibility selected state for Creative Direction radio buttons and their cards.
+- Replaced deforming SVG preview behaviour with centred aspect-ratio-preserving rendering.
+- Increased technical SVG typography and spacing for vertical and landscape formats.
+- Preserved the complete confirmed headline without text overlap or canvas overflow.
+- Localized remaining user-facing GUI headings, messages and button labels into Russian.
+- Added Qt tests for direction switching, preview resizing, aspect ratio and localization.
+- Added regression tests for typography metrics, complete headline transfer and both SVG formats.
+- Kept Creative Reasoning, Production Readiness and the user workflow unchanged.
+
 ## 0.3.1 — Deterministic natural-request parsing
 
 - Added one shared parser for CLI and GUI request analysis.

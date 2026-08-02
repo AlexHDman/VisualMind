@@ -844,46 +844,58 @@ def validate_svg_layout(width: int, height: int, boxes: dict[str, LayoutBox]) ->
 def svg_layout(width: int, height: int, headline_line_count: int) -> tuple[dict[str, int], dict[str, LayoutBox]]:
     if (width, height) == (1080, 1920):
         metrics = {
-            "left": 72, "hero_x": 790, "headline_y": 390, "headline_step": 88,
-            "headline_size": 72, "product_y": 910, "trust_y": 1020,
-            "cta_y": 1710, "hero_head_y": 570, "hero_curve_y": 670,
-            "hero_bottom_y": 1130, "hero_hands_y": 965, "wrap_width": 22,
+            "left": 72, "hero_x": 790, "brand_y": 150, "brand_size": 34,
+            "headline_y": 300, "headline_step": 100, "headline_size": 84,
+            "product_y": 1450, "product_size": 48,
+            "trust_y": 1540, "meta_size": 32,
+            "cta_y": 1750, "cta_size": 38, "cta_height": 112, "cta_top_offset": 70,
+            "hero_head_y": 830, "hero_curve_y": 920,
+            "hero_bottom_y": 1320, "hero_hands_y": 1155, "wrap_width": 24,
+            "max_headline_lines": 4,
         }
     elif (width, height) == (1080, 1080):
         metrics = {
-            "left": 72, "hero_x": 820, "headline_y": 300, "headline_step": 78,
-            "headline_size": 64, "product_y": 600, "trust_y": 680,
-            "cta_y": 920, "hero_head_y": 330, "hero_curve_y": 430,
-            "hero_bottom_y": 790, "hero_hands_y": 680, "wrap_width": 24,
+            "left": 72, "hero_x": 820, "brand_y": 150, "brand_size": 32,
+            "headline_y": 300, "headline_step": 94, "headline_size": 78,
+            "product_y": 610, "product_size": 42,
+            "trust_y": 690, "meta_size": 30,
+            "cta_y": 930, "cta_size": 34, "cta_height": 100, "cta_top_offset": 62,
+            "hero_head_y": 330, "hero_curve_y": 430,
+            "hero_bottom_y": 790, "hero_hands_y": 680, "wrap_width": 13,
+            "max_headline_lines": 3,
         }
     elif (width, height) == (1200, 628):
         metrics = {
-            "left": 80, "hero_x": 1000, "headline_y": 245, "headline_step": 68,
-            "headline_size": 56, "product_y": 450, "trust_y": 495,
-            "cta_y": 575, "hero_head_y": 185, "hero_curve_y": 190,
-            "hero_bottom_y": 580, "hero_hands_y": 500, "wrap_width": 26,
+            "left": 80, "hero_x": 1000, "brand_y": 130, "brand_size": 30,
+            "headline_y": 190, "headline_step": 61, "headline_size": 60,
+            "product_y": 430, "product_size": 36,
+            "trust_y": 475, "meta_size": 26,
+            "cta_y": 570, "cta_size": 32, "cta_height": 92, "cta_top_offset": 58,
+            "hero_head_y": 185, "hero_curve_y": 190,
+            "hero_bottom_y": 580, "hero_hands_y": 500, "wrap_width": 24,
+            "max_headline_lines": 4,
         }
     else:
         raise ValueError(
             f"Unsupported production dimensions: {width}x{height}. "
             "Supported formats are 1080x1920, 1080x1080 and 1200x628."
         )
-    line_count = max(1, min(headline_line_count, 3))
+    line_count = max(1, min(headline_line_count, metrics["max_headline_lines"]))
     left = metrics["left"]
     hero_x = metrics["hero_x"]
     cta_width = min(width - 2 * left, 720)
     content_right = hero_x - 205 if width >= height else width - left
     boxes = {
-        "brand": LayoutBox(left, 82, min(left + 430, width), 156),
+        "brand": LayoutBox(left, metrics["brand_y"] - metrics["brand_size"], min(left + 430, width), metrics["brand_y"] + 8),
         "headline": LayoutBox(
             left,
             metrics["headline_y"] - metrics["headline_size"],
             content_right,
             metrics["headline_y"] + (line_count - 1) * metrics["headline_step"] + 12,
         ),
-        "product": LayoutBox(left, metrics["product_y"] - 40, content_right, metrics["product_y"] + 10),
-        "meta": LayoutBox(left, metrics["trust_y"] - 28, content_right, metrics["trust_y"] + 8),
-        "cta": LayoutBox(left, metrics["cta_y"] - 54, left + cta_width, metrics["cta_y"] + 32),
+        "product": LayoutBox(left, metrics["product_y"] - metrics["product_size"], content_right, metrics["product_y"] + 10),
+        "meta": LayoutBox(left, metrics["trust_y"] - metrics["meta_size"], content_right, metrics["trust_y"] + 8),
+        "cta": LayoutBox(left, metrics["cta_y"] - metrics["cta_top_offset"], left + cta_width, metrics["cta_y"] - metrics["cta_top_offset"] + metrics["cta_height"]),
         "hero_head": LayoutBox(hero_x - 110, metrics["hero_head_y"] - 110, hero_x + 110, metrics["hero_head_y"] + 110),
         "hero_body": LayoutBox(hero_x - 186, metrics["hero_curve_y"] - 36, hero_x + 186, metrics["hero_bottom_y"] + 36),
     }
@@ -968,17 +980,24 @@ class LocalSvgGenerator:
         content = specification.required_content
         background, accent, foreground = color_strategy(specification.emotional_direction)
         width, height = specification.width, specification.height
-        preliminary_wrap_width = 22 if height > width else 26
-        headline_lines = textwrap.wrap(content["headline"], width=preliminary_wrap_width)[:3]
+        metrics, _ = svg_layout(width, height, 1)
+        headline_lines = textwrap.wrap(content["headline"], width=metrics["wrap_width"])[:metrics["max_headline_lines"]]
         metrics, _ = svg_layout(width, height, len(headline_lines))
         left = metrics["left"]
         hero_x = metrics["hero_x"]
         headline_y = metrics["headline_y"]
         headline_step = metrics["headline_step"]
         headline_size = metrics["headline_size"]
+        brand_y = metrics["brand_y"]
+        brand_size = metrics["brand_size"]
         product_y = metrics["product_y"]
+        product_size = metrics["product_size"]
         trust_y = metrics["trust_y"]
+        meta_size = metrics["meta_size"]
         cta_y = metrics["cta_y"]
+        cta_size = metrics["cta_size"]
+        cta_height = metrics["cta_height"]
+        cta_top_offset = metrics["cta_top_offset"]
         hero_head_y = metrics["hero_head_y"]
         hero_curve_y = metrics["hero_curve_y"]
         hero_bottom_y = metrics["hero_bottom_y"]
@@ -988,7 +1007,9 @@ class LocalSvgGenerator:
         output_path = output_dir / f"{safe_name}.svg"
         trace_path = output_dir / f"{safe_name}.json"
         headline_svg = "".join(
-            f'<text x="{left}" y="{headline_y + index * headline_step}" class="headline">{html.escape(line)}</text>'
+            f'<text x="{left}" y="{headline_y + index * headline_step}" class="headline" '
+            f'font-family="Segoe UI" font-size="{headline_size}" font-weight="700" '
+            f'fill="{foreground}">{html.escape(line)}</text>'
             for index, line in enumerate(headline_lines)
         )
         trust = content["trust_evidence"] or "Без неподтверждённых обещаний"
@@ -1005,18 +1026,15 @@ class LocalSvgGenerator:
   <circle cx="{hero_x - 105}" cy="{hero_hands_y}" r="20" fill="{accent}"/>
   <circle cx="{hero_x + 105}" cy="{hero_hands_y}" r="20" fill="{accent}"/>
   <rect x="{left}" y="82" width="126" height="8" rx="4" fill="{accent}"/>
-  <text x="{left}" y="150" class="brand">{html.escape(content['brand'].upper())}</text>
+  <text x="{left}" y="{brand_y}" class="brand" font-family="Segoe UI" font-size="{brand_size}" font-weight="700" letter-spacing="4" fill="{accent}">{html.escape(content['brand'].upper())}</text>
   {headline_svg}
-  <text x="{left}" y="{product_y}" class="product">{html.escape(content['product'])}</text>
-  <text x="{left}" y="{trust_y}" class="meta">{html.escape(trust)}</text>
-  <rect x="{left}" y="{cta_y - 54}" width="{min(width - 2 * left, 720)}" height="86" rx="43" fill="{accent}"/>
-  <text x="{left + 34}" y="{cta_y}" class="cta">{html.escape(content['call_to_action'])}</text>
+  <text x="{left}" y="{product_y}" class="product" font-family="Segoe UI" font-size="{product_size}" font-weight="600" fill="{foreground}">{html.escape(content['product'])}</text>
+  <text x="{left}" y="{trust_y}" class="meta" font-family="Segoe UI" font-size="{meta_size}" font-weight="400" fill="{foreground}" opacity="0.78">{html.escape(trust)}</text>
+  <rect x="{left}" y="{cta_y - cta_top_offset}" width="{min(width - 2 * left, 720)}" height="{cta_height}" rx="{cta_height // 2}" fill="{accent}"/>
+  <text x="{left + 34}" y="{cta_y}" class="cta" font-family="Segoe UI" font-size="{cta_size}" font-weight="700" fill="{background}">{html.escape(content['call_to_action'])}</text>
   <style>
-    .brand {{ font: 700 28px Arial, sans-serif; letter-spacing: 4px; fill: {accent}; }}
-    .headline {{ font: 700 {headline_size}px Arial, sans-serif; fill: {foreground}; }}
-    .product {{ font: 600 34px Arial, sans-serif; fill: {foreground}; }}
-    .meta {{ font: 400 23px Arial, sans-serif; fill: {foreground}; opacity: .78; }}
-    .cta {{ font: 700 28px Arial, sans-serif; fill: {background}; }}
+    .brand {{ letter-spacing: 4px; }}
+    .meta {{ opacity: .78; }}
   </style>
 </svg>'''
         output_path.write_text(svg, encoding="utf-8")
